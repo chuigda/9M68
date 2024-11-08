@@ -4,4 +4,5 @@ self/*.json
 apikey.json
 
 *.log
+logs/*.json
 node_modules
