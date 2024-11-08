@@ -6,6 +6,7 @@ import fetch from 'node-fetch'
 const { prompt } = enquirer
 
 const systemLog = []
+const memoryBook = []
 const chatLog = []
 
 const timestamp = Date.now() - 0
@@ -100,7 +101,6 @@ const applicationStart = async () => {
          name: self.name,
          content: self.settings
       })
-      console.info(chalk.bgGreenBright(chalk.bold(`选择了自设: ${self.name}`)))
       console.info(chalk.gray(chalk.italic(self.settings)))
    }
    else {
@@ -273,6 +273,13 @@ const applicationStart = async () => {
       await writeLog(`${character.name}: ${message}`, 'CHAT')
       chatLog.push({ role: 'assistant', name: character.name, content: message })
    }
+
+   await writeFile(jsonLogFile, JSON.stringify({
+      characterFile,
+      selfFile,
+      memoryBook,
+      chatLog
+   }, null, 2))
 }
 
 applicationStart()
