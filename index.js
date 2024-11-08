@@ -1,12 +1,15 @@
-import { readFile, readdir, writeFile } from 'fs/promises'
+import { readFile, writeFile } from 'fs/promises'
 import enquirer from 'enquirer'
 import chalk from 'chalk'
-import fetch from 'node-fetch'
+
+import { listdir, postJSON } from './util.js'
+import { compressMemory } from './compress.js'
 
 const { prompt } = enquirer
 
 const systemLog = []
 const memoryBook = []
+const compressedChatLog = []
 const chatLog = []
 
 const timestamp = Date.now() - 0
@@ -14,11 +17,6 @@ const logFile = `./logs/${timestamp}.log`
 let jsonLogFile = `./logs/${timestamp}.json`
 
 const defaultModel = 'abab6.5t-chat'
-
-const listdir = async (path, ext) => {
-   const files = await readdir(path)
-   return files.filter(file => file.endsWith(`.${ext}`))
-}
 
 const writeLog = async (message, level) => {
    const currentTimeSeconds = Math.round((new Date() - 0) / 1000.0)
@@ -28,12 +26,6 @@ const writeLog = async (message, level) => {
       { flag: 'a' }
    )
 }
-
-const postJSON = async (url, headers, payload) => fetch(url, {
-   method: 'POST',
-   headers: headers,
-   body: JSON.stringify(payload)
-}).then(resp => resp.json())
 
 const removeLastConsoleLine = () => {
    process.stdout.moveCursor(0, -1)
@@ -53,7 +45,13 @@ const applicationStart = async () => {
       const data = JSON.parse(await readFile(jsonLogFile, 'utf-8'))
 
       chatLog.push(...data.chatLog)
-      memoryBook.push(...data.memoryBook)
+      if (data.compressedChatLog) {
+         compressedChatLog.push(...data.compressedChatLog)
+      }
+      if (data.memoryBook) {
+         memoryBook.push(...data.memoryBook)
+      }
+
       const characterFile = data.characterFile
       const selfFile = data.selfFile
       const character = JSON.parse(await readFile(`./characters/${characterFile}`, 'utf-8'))
@@ -224,6 +222,29 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
          continue
       }
 
+      if (command === 'memory') {
+         console.info(memoryBook)
+         continue
+      }
+
+      if (command === 'compress') {
+         if (chatLog.length <= 1) {
+            console.warn(chalk.yellowBright('没有需要压缩的对话记录'))
+            continue
+         }
+
+         const chatLogLength = chatLog.length
+         const halfChatLog = chatLog.splice(0, chatLogLength / 2)
+         const compressed = await compressMemory(apiKey, halfChatLog)
+         memoryBook.push({
+            role: 'assistant',
+            name: '旁白',
+            content: compressed.content
+         })
+         compressedChatLog.push(...halfChatLog)
+         continue
+      }
+
       if (command.startsWith('!')) {
          const rewrittenText = command.substring(1).trim()
          chatLog[chatLog.length - 1].content = rewrittenText
@@ -245,6 +266,7 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
                model,
                messages: [
                   ...systemLog,
+                  ...memoryBook,
                   ...chatLog.slice(0, -1)
                ],
                n: 3
@@ -313,6 +335,20 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
       }
       writeLog(`使用 token 数量: ${resp.usage.total_tokens}`, 'INFO')
 
+      // 启动记忆压缩
+      if (resp.usage.total_tokens >= 7000) {
+         // remove half of the chat log from the beginning
+         const chatLogLength = chatLog.length
+         const halfChatLog = chatLog.splice(0, chatLogLength / 2)
+         const compressed = await compressMemory(apiKey, halfChatLog)
+         memoryBook.push({
+            role: 'assistant',
+            name: '旁白',
+            content: compressed.content
+         })
+         compressedChatLog.push(...halfChatLog)
+      }
+
       const message = resp.choices[0].message.content
       console.info(chalk.bold(`${character.name}: `) + message)
       await writeLog(`${character.name}: ${message}`, 'CHAT')
@@ -323,6 +359,7 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
       characterFile,
       selfFile,
       memoryBook,
+      compressedChatLog,
       chatLog
    }, null, 2))
 }
