@@ -227,21 +227,22 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
          continue
       }
 
-      if (command === 'compress') {
+      if (command === 'compress' || command === 'compressall') {
          if (chatLog.length <= 1) {
             console.warn(chalk.yellowBright('没有需要压缩的对话记录'))
             continue
          }
 
          const chatLogLength = chatLog.length
-         const halfChatLog = chatLog.splice(0, chatLogLength / 2)
-         const compressed = await compressMemory(apiKey, halfChatLog)
+         const toBeCompressedLength = command === 'compress' ? chatLogLength / 2 : chatLogLength
+         const toBeCompressedLog = chatLog.splice(0, toBeCompressedLength)
+         const compressed = await compressMemory(apiKey, toBeCompressedLog)
          memoryBook.push({
             role: 'assistant',
             name: '旁白',
             content: compressed.content
          })
-         compressedChatLog.push(...halfChatLog)
+         compressedChatLog.push(...toBeCompressedLog)
          continue
       }
 
