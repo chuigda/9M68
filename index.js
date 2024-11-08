@@ -227,14 +227,53 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
          continue
       }
 
-      if (command === 'compress' || command === 'compressall') {
+      if (command.startsWith('compress')) {
          if (chatLog.length <= 1) {
-            console.warn(chalk.yellowBright('没有需要压缩的对话记录'))
+            console.warn(chalk.yellowBright('没有可以压缩的对话记录'))
             continue
          }
 
+         const parts = command.split(' ').map(part => part.trim()).filter(part => part.length > 0)
          const chatLogLength = chatLog.length
-         const toBeCompressedLength = command === 'compress' ? chatLogLength / 2 : chatLogLength
+         let toBeCompressedLength
+         if (parts.length === 1) {
+            toBeCompressedLength = chatLogLength / 2
+         }
+         else if (parts.length === 2) {
+            if (parts[1] === 'all') {
+               toBeCompressedLength = chatLogLength
+            }
+            else {
+               const numArg = parseFloat(parts[1])
+               if (isNaN(numArg)) {
+                  console.warn(chalk.yellowBright(`compress: 参数 ${parts[1]} 无效`))
+               }
+
+               if (numArg > 0.0 && numArg <= 1.0) {
+                  toBeCompressedLength = Math.round(chatLogLength * numArg)
+                  if (toBeCompressedLength === 0) {
+                     console.warn(chalk.yellowBright('compress: 若按比例压缩，至少需要压缩一条对话记录'))
+                     continue
+                  }
+               }
+               else if (numArg < 0) {
+                  toBeCompressedLength = Math.round(chatLogLength + numArg)
+                  if (toBeCompressedLength < 1) {
+                     console.warn(chalk.yellowBright(`compress: 若按数量压缩，至少需要压缩一条对话记录 (目前共有 ${chatLogLength} 条未压缩的记录)`))
+                     continue
+                  }
+               }
+               else {
+                  console.warn(chalk.yellowBright(`compress: 参数 ${parts[1]} 无效`))
+                  continue
+               }
+            }
+         }
+         else {
+            console.warn(chalk.yellowBright('compress: 参数过多'))
+            continue
+         }
+
          const toBeCompressedLog = chatLog.splice(0, toBeCompressedLength)
          const compressed = await compressMemory(apiKey, toBeCompressedLog)
          memoryBook.push({
@@ -278,7 +317,7 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
             await writeLog(`API 错误: (${resp.base_resp.status_code}) ${resp.base_resp.status_msg}`, 'ERROR')
             continue
          }
-         writeLog(`使用 token 数量: ${resp.usage.total_tokens}`, 'INFO')
+         writeLog(`使用 token 额度: ${resp.usage.total_tokens}`, 'INFO')
 
          const choices = resp.choices.map((choice, idx) => {
             return { name: choice.message.content, value: `${idx}` }
@@ -334,7 +373,7 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
          await writeLog(`API 错误: (${resp.base_resp.status_code}) ${resp.base_resp.status_msg}`, 'ERROR')
          continue
       }
-      writeLog(`使用 token 数量: ${resp.usage.total_tokens}`, 'INFO')
+      writeLog(`使用 token 额度: ${resp.usage.total_tokens}`, 'INFO')
 
       // 启动记忆压缩
       if (resp.usage.total_tokens >= 7000) {
