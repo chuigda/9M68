@@ -70,6 +70,10 @@ const applicationStart = async () => {
       return await chatMain(apiKey, characterFile, selfFile, character, self)
    }
 
+   if (process.argv.length === 4 && process.argv[2] === '--save') {
+      jsonLogFile = process.argv[3]
+   }
+
    // 读取角色和自设信息
    const characters = await listdir('./characters', 'chr')
    const selfSettings = await listdir('./self', 'chr')
@@ -162,7 +166,8 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
       console.info(chalk.bold(`${character.name} (开场白): `) + chalk.gray(character.openingDialogue))
    }
    else {
-      for (const log of chatLog) {
+      // show only the last 20 lines
+      for (const log of chatLog.slice(-20)) {
          if (log.name !== '旁白') {
             console.info(chalk.bold(`${log.name}: `) + log.content)
          }
@@ -174,12 +179,14 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
 
    while (true) {
       let commentatorMode = false
+      let modifyMode = false
       const input = await prompt({
          type: 'text',
          name: 'value',
-         message: () => commentatorMode ? '旁白' : selfName,
+         message: () => commentatorMode ? '旁白' : (modifyMode ? '重写' : selfName),
          format: value => {
             commentatorMode = value.trim().startsWith('/')
+            modifyMode = value.trim().startsWith('!')
             return value
          },
          validate: value => {

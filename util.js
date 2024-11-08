@@ -1,3 +1,4 @@
+import { readdir } from 'fs/promises'
 import fetch from 'node-fetch'
 
 export const listdir = async (path, ext) => {
@@ -10,4 +11,3 @@ export const postJSON = async (url, headers, payload) => fetch(url, {
    headers: headers,
    body: JSON.stringify(payload)
 }).then(resp => resp.json())
-
