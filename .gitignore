@@ -2,3 +2,6 @@ characters/*.json
 self/*.json
 
 apikey.json
+
+*.log
+node_modules

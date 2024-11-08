@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "description": "Project-68bis AI chatbot(?)",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "run": "node index.js"
   },
   "author": "Chuigda Whitegive <icey@icey.tech>",
-  "license": "AGPL-3.0-only"
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "chalk": "^5.3.0"
+  }
 }
