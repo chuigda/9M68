@@ -1,0 +1,11 @@
+{
+  "name": "68bis",
+  "version": "1.0.0",
+  "description": "Project-68bis AI chatbot(?)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chuigda Whitegive <icey@icey.tech>",
+  "license": "AGPL-3.0-only"
+}

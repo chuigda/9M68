@@ -1,0 +1,4 @@
+characters/*.json
+self/*.json
+
+apikey.json
