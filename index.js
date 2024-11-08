@@ -190,7 +190,14 @@ const applicationStart = async () => {
                'Content-Type': 'application/json',
                'Authorization': `Bearer ${apiKey}`
             },
-            { model, messages: [ ...systemLog, ...chatLog ], n: 3 }
+            {
+               model,
+               messages: [
+                  ...systemLog,
+                  ...chatLog.slice(0, -1)
+               ],
+               n: 3
+            }
          )
          if (resp.base_resp.status_code !== 0) {
             console.error(chalk.redBright(chalk.bold('API 错误: ') + `(${resp.base_resp.status_code}) ${resp.base_resp.status_msg}`))
