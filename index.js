@@ -62,10 +62,7 @@ const applicationStart = async () => {
       type: 'select',
       name: 'value',
       message: '选择一个角色',
-      choices: characters.map(file => ({
-         message: file,
-         value: file,
-      }))
+      choices: characters
    })).value
    const character = JSON.parse(await readFile(`./characters/${characterFile}`, 'utf-8'))
    await writeLog(`选择了角色: ${characterFile}`, 'INFO')
@@ -89,15 +86,9 @@ const applicationStart = async () => {
       type: 'select',
       name: 'value',
       message: '选择一个自设',
-      choices: [
-         ...selfSettings.map(file => ({
-            name: file,
-            value: file,
-         })),
-         { name: '无', value: '' }
-      ]
-   }))
-   const self = selfFile ? JSON.parse(await readFile(`./self/${selfFile}`, 'utf-8')) : undefined
+      choices: [...selfSettings, '无']
+   })).value
+   const self = selfFile !== '无' ? JSON.parse(await readFile(`./self/${selfFile}`, 'utf-8')) : undefined
    if (self) {
       await writeLog(`选择了自设: ${selfFile}`, 'INFO')
       systemLog.push({
@@ -114,7 +105,7 @@ const applicationStart = async () => {
          content: ''
       })
    }
-   const selfName = self ? self.name : '你'
+   const selfName = self ? self.name : '用户'
 
    // 固定添加旁白角色
    systemLog.push({
@@ -182,8 +173,8 @@ const applicationStart = async () => {
          chatLog[chatLog.length - 1].content = rewrittenText
 
          removeLastConsoleLine()
-         console.info(chalk.bold(`${selfName}: `) + rewrittenText)
-         await writeLog(`已修改对话内容 ${selfName}: ${rewrittenText}`, 'CHAT')
+         console.info(chalk.bold(`${character.name}: `) + rewrittenText)
+         await writeLog(`已修改对话内容 ${character.name}: ${rewrittenText}`, 'CHAT')
          continue
       }
 
@@ -202,22 +193,26 @@ const applicationStart = async () => {
             continue
          }
 
-         const choices = resp.choices.map(choice => ({ name: choice.message.content, value: choice.message.content }))
-         const choice = await prompt({
+         const choices = resp.choices.map((choice, idx) => ({ name: choice.message.content, value: idx }))
+         const choice = (await prompt({
             type: 'select',
             name: 'value',
             message: '选择一个重写',
             choices: [
                ...choices,
-               { name: '无', value: '' }
-            ]
-         })
+               { name: '无', value: -1 }
+            ],
+            result() {
+               return this.focused.value
+            }
+         })).value
          removeLastConsoleLine()
-         if (choice.value !== '') {
-            chatLog[chatLog.length - 1].content = choice.value
+         if (choice !== -1) {
+            const choiceText = choices[choice].name
+            chatLog[chatLog.length - 1].content = choiceText
             removeLastConsoleLine()
-            console.info(chalk.bold(`${character.name}: `) + choice.value)
-            await writeLog(`已修改对话内容 ${character.name}: ${choice.value}`, 'CHAT')
+            console.info(chalk.bold(`${character.name}: `) + choiceText)
+            await writeLog(`已修改对话内容 ${character.name}: ${choiceText}`, 'CHAT')
          }
          continue
       }
