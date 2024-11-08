@@ -40,6 +40,9 @@ const removeLastConsoleLine = () => {
 }
 
 const applicationStart = async () => {
+   writeLog('应用程序已启动', 'INFO')
+   console.info(chalk.greenBright(`应用程序已启动，日志文件 ${logFile}`))
+
    // 读取 API-Key
    const apiKey = JSON.parse(await readFile('./apiKey.json', 'utf-8'))
 
@@ -66,6 +69,8 @@ const applicationStart = async () => {
    })).value
    const character = JSON.parse(await readFile(`./characters/${characterFile}`, 'utf-8'))
    await writeLog(`选择了角色: ${characterFile}`, 'INFO')
+   console.info(chalk.bold(`选择了角色: ${character.name}`))
+   console.info(chalk.gray(chalk.italic(character.settings)))
 
    // 如果角色使用了 fine tune 过的模型则使用该模型
    const model = character.model ?? defaultModel
@@ -96,6 +101,8 @@ const applicationStart = async () => {
          name: self.name,
          content: self.settings
       })
+      console.info(chalk.bgGreenBright(chalk.bold(`选择了自设: ${self.name}`)))
+      console.info(chalk.gray(chalk.italic(self.settings)))
    }
    else {
       await writeLog('没有选择自设', 'INFO')
@@ -204,6 +211,7 @@ const applicationStart = async () => {
             await writeLog(`API 错误: (${resp.base_resp.status_code}) ${resp.base_resp.status_msg}`, 'ERROR')
             continue
          }
+         writeLog(`使用 token 数量: ${resp.usage.total_tokens}`, 'INFO')
 
          const choices = resp.choices.map((choice, idx) => ({ name: choice.message.content, value: idx }))
          const choice = (await prompt({
@@ -257,6 +265,7 @@ const applicationStart = async () => {
          await writeLog(`API 错误: (${resp.base_resp.status_code}) ${resp.base_resp.status_msg}`, 'ERROR')
          continue
       }
+      writeLog(`使用 token 数量: ${resp.usage.total_tokens}`, 'INFO')
 
       const message = resp.choices[0].message.content
       console.info(chalk.bold(`${character.name}: `) + message)
