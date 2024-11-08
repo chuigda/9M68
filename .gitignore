@@ -1,5 +1,5 @@
-characters/*.json
-self/*.json
+characters/*.chr
+self/*.chr
 
 apikey.json
 

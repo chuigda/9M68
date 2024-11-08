@@ -11,7 +11,7 @@ const chatLog = []
 
 const timestamp = Date.now() - 0
 const logFile = `./logs/${timestamp}.log`
-const jsonLogFile = `./logs/${timestamp}.json`
+let jsonLogFile = `./logs/${timestamp}.json`
 
 const defaultModel = 'abab6.5t-chat'
 
@@ -47,9 +47,34 @@ const applicationStart = async () => {
    // 读取 API-Key
    const apiKey = JSON.parse(await readFile('./apiKey.json', 'utf-8'))
 
+   // 如果第一个参数是 --load，从指定文件中加载对话记录
+   if (process.argv.length === 4 && process.argv[2] === '--load') {
+      jsonLogFile = process.argv[3]
+      const data = JSON.parse(await readFile(jsonLogFile, 'utf-8'))
+
+      chatLog.push(...data.chatLog)
+      memoryBook.push(...data.memoryBook)
+      const characterFile = data.characterFile
+      const selfFile = data.selfFile
+      const character = JSON.parse(await readFile(`./characters/${characterFile}`, 'utf-8'))
+      const self = selfFile ? JSON.parse(await readFile(`./self/${selfFile}`, 'utf-8')) : undefined
+      console.info(chalk.greenBright(`已加载对话记录 ${jsonLogFile}`))
+      await writeLog(`已加载对话记录 ${jsonLogFile}`, 'INFO')
+      console.info(chalk.bold(`对话角色: ${character.name}`))
+      console.info(chalk.gray(chalk.italic(character.settings)))
+      if (self) {
+         console.info(chalk.bold(`自设角色: ${self.name}`))
+      }
+      else {
+         console.info(chalk.yellowBright('没有选择自设角色'))
+      }
+
+      return await chatMain(apiKey, characterFile, selfFile, character, self)
+   }
+
    // 读取角色和自设信息
-   const characters = await listdir('./characters', 'json')
-   const selfSettings = await listdir('./self', 'json')
+   const characters = await listdir('./characters', 'chr')
+   const selfSettings = await listdir('./self', 'chr')
 
    if (characters.length == 0) {
       console.warn(chalk.yellowBright('没有可用的角色配置文件'))
@@ -69,22 +94,7 @@ const applicationStart = async () => {
       choices: characters
    })).value
    const character = JSON.parse(await readFile(`./characters/${characterFile}`, 'utf-8'))
-   await writeLog(`选择了角色: ${characterFile}`, 'INFO')
    console.info(chalk.gray(chalk.italic(character.settings)))
-
-   // 如果角色使用了 fine tune 过的模型则使用该模型
-   const model = character.model ?? defaultModel
-   if (model !== defaultModel) {
-      console.info(chalk.greenBright(`提示: 角色拥有微调模型: ${model}`))
-      await writeLog(`角色拥有微调模型: ${model}`, 'INFO')
-   }
-
-   // 在系统级提示中记录角色的设置
-   systemLog.push({
-      role: 'system',
-      name: character.name,
-      content: character.settings + (character.hiddenSettings ?? '')
-   })
 
    // 如果至少有一个自设文件，则要求选择一个自设
    const selfFile = characters.length === 0 ? undefined : (await prompt({
@@ -94,26 +104,46 @@ const applicationStart = async () => {
       choices: [...selfSettings, '无']
    })).value
    const self = selfFile !== '无' ? JSON.parse(await readFile(`./self/${selfFile}`, 'utf-8')) : undefined
+
+   await chatMain(apiKey, characterFile, selfFile, character, self)
+}
+
+const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
+   // 日志记录
+   await writeLog(`选择了角色: ${characterFile}`, 'INFO')
    if (self) {
       await writeLog(`选择了自设: ${selfFile}`, 'INFO')
-      systemLog.push({
-         role: 'user_system',
-         name: self.name,
-         content: self.settings
-      })
       console.info(chalk.gray(chalk.italic(self.settings)))
    }
    else {
       await writeLog('没有选择自设', 'INFO')
-      systemLog.push({
-         role: 'user_system',
-         name: '用户',
-         content: ''
-      })
    }
+
+   // 如果角色使用了 fine tune 过的模型则使用该模型
+   const model = character.model ?? defaultModel
+   if (model !== defaultModel) {
+      console.info(chalk.greenBright(`提示: 角色拥有微调模型: ${model}`))
+      await writeLog(`角色拥有微调模型: ${model}`, 'INFO')
+   }
+
+   // 选择正确的用户名
    const selfName = self ? self.name : '用户'
 
-   // 固定添加旁白角色
+   // 在系统级提示中记录角色的设置
+   systemLog.push({
+      role: 'system',
+      name: character.name,
+      content: character.settings + (character.hiddenSettings ?? '')
+   })
+
+   // 在系统级提示中记录自设的设置
+   systemLog.push({
+      role: 'user_system',
+      name: selfName,
+      content: self ? self.settings : ''
+   })
+
+   // 添加旁白角色
    systemLog.push({
       role: 'system',
       name: '旁白',
@@ -121,13 +151,28 @@ const applicationStart = async () => {
    })
 
    // 添加开场白到对话记录中
-   chatLog.push({
-      role: 'assistant',
-      name: character.name,
-      content: character.openingDialogue
-   })
-   writeLog(`${character.name} (开场白): ${character.openingDialogue}`, 'CHAT')
-   console.info(chalk.bold(`${character.name} (开场白): `) + chalk.gray(character.openingDialogue))
+   if (chatLog.length === 0) {
+      chatLog.push({
+         role: 'assistant',
+         name: character.name,
+         content: character.openingDialogue
+      })
+   }
+
+   if (chatLog.length === 1) {
+      writeLog(`${character.name} (开场白): ${character.openingDialogue}`, 'CHAT')
+      console.info(chalk.bold(`${character.name} (开场白): `) + chalk.gray(character.openingDialogue))
+   }
+   else {
+      for (const log of chatLog) {
+         if (log.name !== '旁白') {
+            console.info(chalk.bold(`${log.name}: `) + log.content)
+         }
+         else {
+            console.info(chalk.italic(chalk.gray(chalk.bold('旁白: ') + log.content)))
+         }
+      }
+   }
 
    while (true) {
       let commentatorMode = false
