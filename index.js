@@ -61,7 +61,7 @@ const applicationStart = async () => {
    }
 
    // 选择要对话的角色
-   const characterFile = characters.length === 1 ? characters[0] : (await prompt({
+   const characterFile = (await prompt({
       type: 'select',
       name: 'value',
       message: '选择一个角色',
@@ -69,7 +69,6 @@ const applicationStart = async () => {
    })).value
    const character = JSON.parse(await readFile(`./characters/${characterFile}`, 'utf-8'))
    await writeLog(`选择了角色: ${characterFile}`, 'INFO')
-   console.info(chalk.bold(`选择了角色: ${character.name}`))
    console.info(chalk.gray(chalk.italic(character.settings)))
 
    // 如果角色使用了 fine tune 过的模型则使用该模型
@@ -213,7 +212,9 @@ const applicationStart = async () => {
          }
          writeLog(`使用 token 数量: ${resp.usage.total_tokens}`, 'INFO')
 
-         const choices = resp.choices.map((choice, idx) => ({ name: choice.message.content, value: idx }))
+         const choices = resp.choices.map((choice, idx) => {
+            return { name: choice.message.content, value: `${idx}` }
+         })
          const choice = (await prompt({
             type: 'select',
             name: 'value',
