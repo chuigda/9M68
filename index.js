@@ -168,6 +168,11 @@ const applicationStart = async () => {
          break
       }
 
+      if (command === 'log') {
+         console.info(chatLog)
+         continue
+      }
+
       if (command.startsWith('!')) {
          const rewrittenText = command.substring(1).trim()
          chatLog[chatLog.length - 1].content = rewrittenText
