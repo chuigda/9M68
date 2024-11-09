@@ -1,6 +1,6 @@
 # Project-68bis
 
-一个类似于[星野](www.xingyeai.com)的对话型人工智能 TUI，基于 [MiniMax](https://www.minimaxi.com) 公司的 `abab6.5t-chat` 模型。
+一个类似于[星野](https://www.xingyeai.com)的对话型人工智能 TUI，基于 [MiniMax](https://www.minimaxi.com) 公司的 `abab6.5t-chat` 模型。
 
 ## 开始游玩
 
@@ -104,3 +104,7 @@ node index.js --load logs/1731167805514.json
 ```bash
 node index.js --save logs/my-chat-with-lily.json
 ```
+
+## 技术细节
+
+> 自己看 `index.js` 吧，懒得写了，反正也很简单
