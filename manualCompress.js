@@ -8,7 +8,7 @@ const applicationStart = async () => {
       process.exit(1)
    }
 
-   const apiKey = JSON.parse(await readFile('apikey.json', 'utf-8'))
+   const apiKey = await readFile('apiKey.txt', 'utf-8')
    const chatLog = JSON.parse(await readFile(process.argv[2], 'utf-8')).chatLog
 
    await compressMemory(apiKey, chatLog)

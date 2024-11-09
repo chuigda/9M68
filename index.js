@@ -63,7 +63,7 @@ const applicationStart = async () => {
    console.info(chalk.greenBright(`应用程序已启动，日志文件 ${logFile}`))
 
    // 读取 API-Key
-   const apiKey = JSON.parse(await readFile('./apiKey.json', 'utf-8'))
+   const apiKey = await readFile('./apiKey.txt', 'utf-8')
 
    // 如果第一个参数是 --load，从指定文件中加载对话记录
    if (process.argv.length === 4 && process.argv[2] === '--load') {

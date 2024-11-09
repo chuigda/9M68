@@ -2,7 +2,10 @@ characters/*.chr
 self/*.chr
 
 apikey.json
+apiKey.txt
 
 *.log
 logs/*.json
 node_modules
+
+!characters/示例角色.chr
