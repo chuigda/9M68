@@ -44,7 +44,7 @@ const invertedChatLog = () => {
             content: log.content
          })
       }
-      else if (log.role !== '旁白') {
+      else if (log.name !== '旁白') {
          ret.push({
             role: 'user',
             name: log.name,
