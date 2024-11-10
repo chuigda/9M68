@@ -224,7 +224,7 @@ const acceptUserInput = async (selfName, character) => {
    return input.value.trim()
 }
 
-const compressMemoryCommand = async command => {
+const compressMemoryCommand = async (apiKey, command) => {
    if (chatLog.length <= 1) {
       console.warn(chalk.yellowBright('没有可以压缩的对话记录'))
       return
@@ -451,7 +451,7 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
       }
 
       if (command.startsWith('compress')) {
-         await compressMemoryCommand(command)
+         await compressMemoryCommand(apiKey, command)
          continue
       }
 
