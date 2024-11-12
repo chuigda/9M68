@@ -500,7 +500,7 @@ const chatMain = async (apiKey, characterFile, selfFile, character, self) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
          },
-         { model, messages: [ ...systemLog, ...chatLog ] }
+         { model, messages: [ ...systemLog, ...memoryBook, ...chatLog ] }
       )
       if (resp.base_resp.status_code !== 0) {
          console.error(chalk.redBright(chalk.bold('API 错误: ') + `(${resp.base_resp.status_code}) ${resp.base_resp.status_msg}`))
